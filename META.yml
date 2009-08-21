@@ -1,0 +1,24 @@
+---
+name: IO-Async-Loop-Ppoll
+version: 0.05
+author:
+  - 'Paul Evans <leonerd@leonerd.org.uk>'
+abstract: a Loop using an C<IO::Ppoll> object
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  IO::Async::Loop::Poll: 0.2
+  IO::Ppoll: 0.05
+build_requires:
+  Test::Exception: 0
+  Test::More: 0
+  Time::HiRes: 0
+provides:
+  IO::Async::Loop::Ppoll:
+    file: lib/IO/Async/Loop/Ppoll.pm
+    version: 0.05
+generated_by: Module::Build version 0.33
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4

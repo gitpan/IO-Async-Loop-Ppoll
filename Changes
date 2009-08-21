@@ -1,0 +1,22 @@
+Revision history for IO-Async-Loop-Ppoll
+
+0.05    CHANGES:
+         * Various small changes to keep CPANTS happy
+         * Renamed to remove 'IO_' prefix for consistency with other Loop
+           modules
+
+0.04    CHANGES:
+         * Added 'use warnings'
+
+        BUGFIXES:
+         * Don't rely on writability of STDOUT during test scripts
+
+0.03    CHANGES:
+         * Updated for IO-Async 0.20
+
+0.02    CHANGES:
+         * Use IO::Async::SignalProxy::signame2num() to convert signal numbers
+           since it may know more than POSIX does
+
+0.01    First version, released on an unsuspecting world.
+
