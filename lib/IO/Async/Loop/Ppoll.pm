@@ -8,7 +8,8 @@ package IO::Async::Loop::Ppoll;
 use strict;
 use warnings;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
+use constant API_VERSION => '0.24';
 
 use IO::Async::Loop::Poll 0.18;
 use base qw( IO::Async::Loop::Poll );
@@ -21,7 +22,7 @@ use POSIX qw( EINTR SIG_BLOCK SIG_UNBLOCK sigprocmask );
 
 =head1 NAME
 
-L<IO::Async::Loop::Ppoll> - a Loop using an C<IO::Ppoll> object
+L<IO::Async::Loop::Ppoll> - use C<IO::Async> with C<ppoll(2)>
 
 =head1 SYNOPSIS
 
