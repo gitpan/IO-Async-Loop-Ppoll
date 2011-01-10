@@ -1,14 +1,14 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2007-2009 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2007-2011 -- leonerd@leonerd.org.uk
 
 package IO::Async::Loop::Ppoll;
 
 use strict;
 use warnings;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 use constant API_VERSION => '0.33';
 
 use IO::Async::Loop::Poll 0.18;
@@ -18,7 +18,7 @@ use Carp;
 
 use IO::Ppoll qw( POLLIN POLLOUT POLLHUP );
 
-use POSIX qw( EINTR SIG_BLOCK SIG_UNBLOCK sigprocmask );
+use POSIX qw( EINTR SIG_BLOCK SIG_UNBLOCK sigprocmask sigaction );
 
 =head1 NAME
 
@@ -81,7 +81,7 @@ sub new
 
    my $self = $class->SUPER::new( %args, poll => $poll );
 
-   $self->{restore_SIG} = {};
+   $self->{signals} = {};
 
    return $self;
 }
@@ -98,7 +98,7 @@ sub DESTROY
 {
    my $self = shift;
 
-   foreach my $signal ( keys %{ $self->{restore_SIG} } ) {
+   foreach my $signal ( keys %{ $self->{signals} } ) {
       $self->unwatch_signal( $signal );
    }
 }
@@ -123,12 +123,21 @@ sub loop_once
    my $poll = $self->{poll};
 
    my $pollret = $poll->poll( $timeout );
-   return undef unless defined $pollret;
 
-   return 0 if $pollret == -1 and $! == EINTR; # Caught signal
-   return undef if $pollret == -1;             # Some other error
+   return undef if ( !defined $pollret or $pollret == -1 ) and $! != EINTR;
 
-   return $self->post_poll();
+   my $count = 0;
+
+   my $signals = $self->{signals};
+   foreach my $sigslot ( values %$signals ) {
+      if( $sigslot->[1] ) {
+         $sigslot->[0]->();
+         $sigslot->[1] = 0;
+         $count++;
+      }
+   }
+
+   return $count + $self->post_poll();
 }
 
 # override
@@ -139,13 +148,21 @@ sub watch_signal
 
    exists $SIG{$signal} or croak "Unrecognised signal name $signal";
 
-   $self->{restore_SIG}->{$signal} = $SIG{$signal};
+   # We cannot simply set $SIG{$signal} = $code here, because of perl bug
+   #   http://rt.perl.org/rt3/Ticket/Display.html?id=82040
+   # Instead, we'll store a tiny piece of code that just sets a flag, and
+   # check the flags on return from the epoll_pwait call.
+
+   $self->{signals}{$signal} = [ $code, 0, $SIG{$signal} ];
+   my $pending = \$self->{signals}{$signal}[1];
 
    my $signum = $self->signame2num( $signal );
-
    sigprocmask( SIG_BLOCK, POSIX::SigSet->new( $signum ) );
 
-   $SIG{$signal} = $code;
+   # Note this is an unsafe signal handler, and as such it should do as little
+   # as possible.
+   my $sigaction = POSIX::SigAction->new( sub { $$pending = 1 } );
+   sigaction( $signum, $sigaction ) or croak "Unable to sigaction - $!";
 }
 
 # override
@@ -158,9 +175,9 @@ sub unwatch_signal
 
    # When we saved the original value, we might have got an undef. But %SIG
    # doesn't like having undef assigned back in, so we need to translate
-   $SIG{$signal} = $self->{restore_SIG}->{$signal} || 'DEFAULT';
+   $SIG{$signal} = $self->{signals}{$signal}[2] || 'DEFAULT';
 
-   delete $self->{restore_SIG}->{$signal};
+   delete $self->{signals}{$signal};
    
    my $signum = $self->signame2num( $signal );
 

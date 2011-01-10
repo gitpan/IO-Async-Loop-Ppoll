@@ -1,5 +1,9 @@
 Revision history for IO-Async-Loop-Ppoll
 
+0.08    BUGFIXES:
+         * Try to workaround perl block/unblock signals bug by using an unsafe
+           POSIX::SigAction handler
+
 0.07    CHANGES:
          * Updated for IO::Async 0.33
 
