@@ -8,8 +8,8 @@ package IO::Async::Loop::Ppoll;
 use strict;
 use warnings;
 
-our $VERSION = '0.08';
-use constant API_VERSION => '0.33';
+our $VERSION = '0.09';
+use constant API_VERSION => '0.49';
 
 use IO::Async::Loop::Poll 0.18;
 use base qw( IO::Async::Loop::Poll );
@@ -20,9 +20,12 @@ use IO::Ppoll qw( POLLIN POLLOUT POLLHUP );
 
 use POSIX qw( EINTR SIG_BLOCK SIG_UNBLOCK sigprocmask sigaction );
 
+use constant _CAN_WATCHDOG => 1;
+use constant WATCHDOG_ENABLE => IO::Async::Loop->WATCHDOG_ENABLE;
+
 =head1 NAME
 
-L<IO::Async::Loop::Ppoll> - use C<IO::Async> with C<ppoll(2)>
+C<IO::Async::Loop::Ppoll> - use C<IO::Async> with C<ppoll(2)>
 
 =head1 SYNOPSIS
 
@@ -128,6 +131,8 @@ sub loop_once
 
    my $count = 0;
 
+   alarm( IO::Async::Loop->WATCHDOG_INTERVAL ) if WATCHDOG_ENABLE;
+
    my $signals = $self->{signals};
    foreach my $sigslot ( values %$signals ) {
       if( $sigslot->[1] ) {
@@ -184,11 +189,6 @@ sub unwatch_signal
    sigprocmask( SIG_UNBLOCK, POSIX::SigSet->new( $signum ) );
 }
 
-# Keep perl happy; keep Britain tidy
-1;
-
-__END__
-
 =head1 SEE ALSO
 
 =over 4
@@ -206,3 +206,7 @@ L<IO::Async::Loop::Poll> - a set using an C<IO::Poll> object
 =head1 AUTHOR
 
 Paul Evans <leonerd@leonerd.org.uk>
+
+=cut
+
+0x55AA;

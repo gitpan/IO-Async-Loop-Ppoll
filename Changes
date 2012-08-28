@@ -1,5 +1,8 @@
 Revision history for IO-Async-Loop-Ppoll
 
+0.09    CHANGES:
+         * Implement IO_ASYNC_WATCHDOG
+
 0.08    BUGFIXES:
          * Try to workaround perl block/unblock signals bug by using an unsafe
            POSIX::SigAction handler
